@@ -1,0 +1,66 @@
+---
+title: "Aspect Notebook"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+First import all required libraries:
+
+```{r}
+library(vcd)
+library(lattice)
+library(lme4)
+library(effects)
+library(qpcR)
+library(Hmisc)
+```
+
+Next, we read the main data file into memory:
+
+```{r}
+asp <- read.csv("Aspect_R_bounding_noamb.csv", header = TRUE)
+summary(asp)
+```
+
+## Construct the models
+To construct a model (DESCRIBE or refer) without boundedness, we use:
+
+```{r}
+asp$lex_asp <- relevel(asp$lex_asp, ref="activity")
+model1 <- glmer(type ~ lex_asp + period + lex_asp:period + (1|File), family=binomial, data = asp, control=glmerControl(optimizer="bobyqa"))
+summary(model1)
+plot(allEffects(model1))
+```
+
+To construct a model (DESCRIBE or refer) *with* boundedness, we use:
+
+```{r}
+asp$lex_asp_b <- relevel(asp$lex_asp_b, ref="activity")
+asp$temp_bound <- relevel(asp$temp_bound, ref="unbound")
+model2 <- glmer(type ~ lex_asp_b + temp_bound + period + lex_asp_b:period + temp_bound:period + (1|File), family=binomial, data = asp, control=glmerControl(optimizer="bobyqa"))
+summary(model2)
+plot(allEffects(model2))
+```
+
+## Models analyses
+The residuals are computed as follows:
+
+```{r}
+anova(model1, model2, test="Chisq")
+```
+
+Finally, to compute the Akaike weight, we use:
+
+```{r}
+akaike.weights(c(AIC(model1), AIC(model2)))
+```
+
+Some remaining code...
+
+```{r}
+probs1 = 1/(1+exp(-fitted(model1)))
+probs2 = 1/(1+exp(-fitted(model2)))
+somers2(probs1, as.numeric(asp$type)-1)
+somers2(probs2, as.numeric(asp$type)-1)
+```
