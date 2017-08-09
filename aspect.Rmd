@@ -1,8 +1,9 @@
 ---
 title: "Aspect Notebook"
+author: "Lauren Fonteyn"
 output:
-  pdf_document: default
-  html_document: default
+  html_document:
+    theme: cosmo
 ---
 
 First import all required libraries:
