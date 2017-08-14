@@ -1,5 +1,5 @@
 ---
-title: "Aspect Notebook"
+title: "Notebook: comparing models of Aspect"
 author: "Lauren Fonteyn"
 output:
   html_document:
@@ -24,8 +24,8 @@ asp <- read.csv("Aspect_R_bounding_noamb.csv", header = TRUE)
 summary(asp)
 ```
 
-## Construct the models
-To construct a model (DESCRIBE or refer) without boundedness, we use:
+## Models
+The following code was used for the unidimensional model (boundedness not included)
 
 ```{r}
 asp$lex_asp <- relevel(asp$lex_asp, ref="activity")
@@ -34,7 +34,7 @@ summary(model1)
 plot(allEffects(model1))
 ```
 
-To construct a model (DESCRIBE or refer) *with* boundedness, we use:
+For the bidimensional model (*with* temporal boundedness), this code was used:
 
 ```{r}
 asp$lex_asp_b <- relevel(asp$lex_asp_b, ref="activity")
@@ -44,24 +44,57 @@ summary(model2)
 plot(allEffects(model2))
 ```
 
-## Models analyses
-The residuals are computed as follows:
+## Comparing the models
+
+First, we can conduct an ANOVA to compare the two models
 
 ```{r}
 anova(model1, model2, test="Chisq")
 ```
 
-Finally, to compute the Akaike weight, we use:
+To compute the Akaike weight, we use:
 
 ```{r}
 akaike.weights(c(AIC(model1), AIC(model2)))
 ```
 
-Some remaining code...
+The following functions yield the C-statistic for each model:
 
 ```{r}
 probs1 = 1/(1+exp(-fitted(model1)))
-probs2 = 1/(1+exp(-fitted(model2)))
 somers2(probs1, as.numeric(asp$type)-1)
+probs2 = 1/(1+exp(-fitted(model2)))
 somers2(probs2, as.numeric(asp$type)-1)
+```
+
+## A third model
+
+Finally, we can also create a third model that only uses temporal boundedness as a predictor:
+
+probs3 = 1/(1+exp(-fitted(model3)))
+somers2(probs3, as.numeric(asp$type)-1)
+```{r}
+asp$temp_bound <- relevel(asp$temp_bound, ref="unbound")
+model3 <- glmer(type ~ temp_bound + period + temp_bound:period + (1|File), family=binomial, data = asp, control=glmerControl(optimizer="bobyqa"))
+summary(model3)
+plot(allEffects(model3))
+```
+
+The C-statistic for this model can be calculated as follows:
+
+```{r}
+probs3 = 1/(1+exp(-fitted(model3)))
+somers2(probs3, as.numeric(asp$type)-1)
+```
+
+We can use the same functions again to calculate the akaike weights:
+
+```{r}
+akaike.weights(c(AIC(model1), AIC(model2), AIC(model3)))
+```
+
+And, finally, the ANOVA:
+
+```{r}
+anova(model2, model3, test="Chisq")
 ```
